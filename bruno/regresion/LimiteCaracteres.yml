@@ -31,7 +31,7 @@ runtime:
   assertions:
     - expression: res.status
       operator: eq
-      value: "205"
+      value: "201"
     - expression: res.body.year
       operator: eq
       value: "1450"
