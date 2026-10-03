@@ -1,0 +1,40 @@
+info:
+  name: PutR3NoExisteValido
+  type: http
+  seq: 11
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/books/{{missingId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Fantasma",
+        "author": "Nadie",
+        "year": 2000
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Tabla de decisión (PUT). Cubre: Regla R3: el libro existe = N, el cuerpo es válido = S"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "404"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Tabla de decisión (PUT)
+
+  **Cubre:** Regla R3: el libro existe = N, el cuerpo es válido = S
+
+  **Resultado esperado:** 404

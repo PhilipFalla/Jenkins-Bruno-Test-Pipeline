@@ -1,0 +1,38 @@
+info:
+  name: LibroSinTitulo
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/books"
+  body:
+    type: json
+    data: '{ "author": "Nadie", "year": 2000 }'
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Partición de equivalencia. Cubre: Partición inválida: falta el campo obligatorio title"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "422"
+    - expression: res.body.detail[0].loc[1]
+      operator: eq
+      value: title
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Partición de equivalencia
+
+  **Cubre:** Partición inválida: falta el campo obligatorio title
+
+  **Resultado esperado:** 422

@@ -1,0 +1,57 @@
+info:
+  name: LimiteCaracteres
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/books"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "{{t120}}",
+        "author": "A",
+        "year": 1450,
+        "copies": 0
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: bru.setVar("t120", "x".repeat(120));
+    - type: tests
+      code: |-
+        // Técnica ISTQB: Valores frontera. Cubre: Fronteras válidas juntas: year = 1450, copies = 0, title de 120 caracteres, author de 1 carácter. Guarda bookId para los requests siguientes.
+        bru.setVar("bookId", res.getBody().id);
+        test("Location apunta al libro creado", function() {
+          expect(res.getHeader("location")).to.equal("/books/" + res.getBody().id);
+        });
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "201"
+    - expression: res.body.year
+      operator: eq
+      value: "1450"
+    - expression: res.body.copies
+      operator: eq
+      value: "0"
+    - expression: res.body.title.length
+      operator: eq
+      value: "120"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Valores frontera
+
+  **Cubre:** Fronteras válidas juntas: year = 1450, copies = 0, title de 120 caracteres, author de 1 carácter. Guarda bookId para los requests siguientes.
+
+  **Resultado esperado:** 201 + Location /books/{id}

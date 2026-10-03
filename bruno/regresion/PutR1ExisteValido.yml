@@ -1,0 +1,53 @@
+info:
+  name: PutR1ExisteValido
+  type: http
+  seq: 9
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/books/{{bookId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Reemplazado",
+        "author": "Otro",
+        "year": 2100
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        // Técnica ISTQB: Tabla de decisión (PUT). Cubre: Regla R1: el libro existe = S, el cuerpo es válido = S. También cubre year = 2100 (frontera válida superior).
+        test("PUT reemplaza el libro completo: copies omitido vuelve al valor por defecto", function() {
+          expect(res.getBody().id).to.equal(Number(bru.getVar("bookId")));
+        });
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.title
+      operator: eq
+      value: Reemplazado
+    - expression: res.body.year
+      operator: eq
+      value: "2100"
+    - expression: res.body.copies
+      operator: eq
+      value: "1"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Tabla de decisión (PUT)
+
+  **Cubre:** Regla R1: el libro existe = S, el cuerpo es válido = S. También cubre year = 2100 (frontera válida superior).
+
+  **Resultado esperado:** 200 y copies = 1, porque PUT reemplaza todo y copies no se envió

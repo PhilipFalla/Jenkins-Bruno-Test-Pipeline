@@ -1,0 +1,38 @@
+info:
+  name: PutR2ExisteInvalido
+  type: http
+  seq: 10
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/books/{{bookId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Solo título"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Tabla de decisión (PUT). Cubre: Regla R2: el libro existe = S, el cuerpo es válido = N (faltan author y year)"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "422"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Tabla de decisión (PUT)
+
+  **Cubre:** Regla R2: el libro existe = S, el cuerpo es válido = N (faltan author y year)
+
+  **Resultado esperado:** 422

@@ -1,0 +1,32 @@
+info:
+  name: DeleteLibro
+  type: http
+  seq: 14
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/books/{{bookId}}"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Transición de estados. Cubre: Existe → Eliminado con el evento DELETE"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "204"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Transición de estados
+
+  **Cubre:** Existe → Eliminado con el evento DELETE
+
+  **Resultado esperado:** 204

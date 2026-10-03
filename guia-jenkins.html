@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HDT 5: CI/CD en Jenkins</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F7F6F1;--ink:#1F241E;--ink2:#545A4E;--line:#DFE1D7;--accent:#2E5D4B;--accentd:#234838;--tint:#E7ECE4;--neg:#9A3B2E;--white:#fff}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 80px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:40px}
+nav{position:sticky;top:16px;align-self:start;font:13px/1.5 "IBM Plex Mono",monospace}
+nav p{color:var(--ink2);margin:0 0 8px;text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+nav a{display:block;color:var(--ink2);text-decoration:none;padding:5px 10px;border-left:2px solid var(--line)}
+nav a:hover,nav a.on{color:var(--accentd);border-left-color:var(--accent);background:var(--tint)}
+main{min-width:0}
+header .k{font:13px "IBM Plex Mono",monospace;color:var(--accentd)}
+h1{font:600 34px/1.2 "IBM Plex Serif",serif;margin:6px 0 10px}
+h2{font:600 24px/1.25 "IBM Plex Serif",serif;margin:56px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--accent)}
+h3{font-size:17px;font-weight:600;margin:28px 0 8px}
+p,li{max-width:74ch}
+a{color:var(--accentd)}
+code{font:14px "IBM Plex Mono",monospace;background:var(--tint);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+.cb{position:relative;margin:12px 0 16px}
+.cb pre{margin:0;background:var(--white);border:1px solid var(--line);border-left:3px solid var(--accent);padding:14px 16px;overflow-x:auto;font:13.5px/1.55 "IBM Plex Mono",monospace}
+.cb pre code{background:none;padding:0;overflow-wrap:normal}
+.cb button{position:absolute;top:6px;right:6px;font:12px "IBM Plex Mono",monospace;background:var(--tint);color:var(--accentd);border:1px solid var(--line);border-radius:4px;padding:3px 9px;cursor:pointer}
+.cb button:hover{border-color:var(--accent)}
+.ph{font:500 0.92em "IBM Plex Mono",monospace;color:var(--neg);border:1px dashed var(--neg);padding:0 5px;border-radius:3px;white-space:nowrap}
+.bar{background:var(--tint);border-left:3px solid var(--accent);padding:10px 14px;margin:14px 0}
+.warn{background:#f6e9e6;border-left:3px solid var(--neg);padding:10px 14px;margin:14px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:15px;background:var(--white)}
+th{background:var(--accent);color:var(--white);text-align:left;font-weight:500}
+th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top}
+tr:nth-child(even) td{background:#f3f5f1}
+.tw{overflow-x:auto}
+ol.steps li{margin-bottom:6px}
+@media (max-width:860px){
+ .wrap{display:block;padding-top:0}
+ nav{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line);margin:0 -16px 20px;padding:8px 16px;display:flex;gap:4px;overflow-x:auto;white-space:nowrap}
+ nav p{display:none}
+ nav a{border-left:0;border-bottom:2px solid transparent;padding:4px 8px}
+ nav a.on{border-bottom-color:var(--accent)}
+ h1{font-size:27px}
+ html{scroll-padding-top:56px}
+ .cb pre{padding-top:34px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav id="toc">
+ <p>Contenido</p>
+ <a href="#req">Requisitos</a>
+ <a href="#a">a. Podman</a>
+ <a href="#b">b. Jenkins</a>
+ <a href="#c">c. Smoke en la interfaz</a>
+ <a href="#d">d. Archivos del repo</a>
+ <a href="#e">e. Job CI/CD</a>
+ <a href="#f">f. Repo privado</a>
+ <a href="#g">g. Entrega</a>
+ <a href="#h">h. Problemas comunes</a>
+ <a href="#i">i. Limpieza</a>
+</nav>
+<main>
+<header>
+ <div class="k">// HDT 5 · entrega: martes 29 de septiembre, 23:59</div>
+ <h1>Pipeline CI/CD en Jenkins con Bruno como puerta</h1>
+ <p>La suite <code>bruno/smoke</code> corre en un job Freestyle armado a mano en la interfaz. La suite <code>bruno/regresion</code> corre en un Jenkinsfile en Groovy, en el repositorio de la HDT 4, y funciona como puerta: si pasa, construye la imagen del API y la despliega en el contenedor <code>books-api</code>, puerto <code>8001</code>. Si falla una aserción, no hay imagen ni despliegue. Cada commit en GitHub dispara el pipeline.</p>
+</header>
+
+<h2 id="req">Requisitos</h2>
+<div class="tw"><table>
+<tr><th>Qué</th><th>Detalle</th></tr>
+<tr><td>Motor de contenedores</td><td>Podman (máquina rootless, la de fábrica) o Docker Desktop, con 4 GB de RAM libres</td></tr>
+<tr><td>Repositorio de la HDT 4</td><td>en GitHub, con <code>api.py</code>, <code>pyproject.toml</code> y <code>uv.lock</code> en la raíz, y <code>bruno/smoke/</code> y <code>bruno/regresion/</code> en verde con <code>bru run --env local</code></td></tr>
+<tr><td>Carpeta de trabajo</td><td><code>jenkins-lab/</code>, fuera del repositorio</td></tr>
+</table></div>
+
+<h2 id="a">a. Podman</h2>
+<div class="cb"><pre><code>podman machine init --memory 4096 --cpus 4
+podman machine start
+podman machine list        # "Currently running"</code></pre></div>
+<div class="bar">Docker Desktop: se salta esta sección, y en el resto <code>docker</code> reemplaza a <code>podman</code>.</div>
+
+<h2 id="b">b. Jenkins</h2>
+<h3>Containerfile</h3>
+<p>Guardar como <code>jenkins-lab/jenkins/Containerfile</code>:</p>
+<div class="cb"><pre><code># Jenkins LTS con bru (Bruno), uv con Python 3.12 y el CLI de docker.
+# El CLI de docker habla con el motor del host por el socket montado en
+# /var/run/docker.sock; sirve igual con Podman y con Docker Desktop.
+# Sin USER jenkins al final: corre como root para poder usar ese socket.
+FROM docker.io/jenkins/jenkins:lts-jdk21
+
+USER root
+RUN apt-get update \
+ &amp;&amp; apt-get install -y --no-install-recommends nodejs npm \
+ &amp;&amp; rm -rf /var/lib/apt/lists/* \
+ &amp;&amp; npm install -g @usebruno/cli \
+ &amp;&amp; bru --version
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+COPY --from=docker.io/library/docker:cli /usr/local/bin/docker /usr/local/bin/
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
+RUN uv python install 3.12 &amp;&amp; chmod -R a+rX /opt/uv-python</code></pre></div>
+<div class="cb"><pre><code>cd jenkins-lab
+podman build -t jenkins-bruno jenkins</code></pre></div>
+
+<h3>Contenedor</h3>
+<div class="cb"><pre><code>SOCK=$(podman info --format '{{.Host.RemoteSocket.Path}}' | sed 's|unix://||')
+podman volume create jenkins_home
+podman run -d --name jenkins \
+  -p 8080:8080 -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  -v "$SOCK":/var/run/docker.sock \
+  --security-opt label=disable \
+  jenkins-bruno</code></pre></div>
+<ul>
+<li><code>$SOCK</code> es el socket de Podman dentro de la VM, por ejemplo <code>/run/user/501/podman/podman.sock</code>. Montado en <code>/var/run/docker.sock</code>, Jenkins construye y corre contenedores en el mismo motor que el propio Jenkins.</li>
+<li><code>--security-opt label=disable</code>: SELinux de la VM bloquea el socket sin esta opción (<code>permission denied</code>).</li>
+<li>El contenedor corre como root para poder abrir el socket. En Podman rootless, ese root es el usuario de la VM y no el root de la Mac. Aceptable en un laboratorio local, no en un servidor compartido.</li>
+<li>Docker Desktop: sin <code>SOCK</code> ni <code>--security-opt</code>, con <code>-v /var/run/docker.sock:/var/run/docker.sock</code>.</li>
+</ul>
+<div class="bar"><strong>Si ya existe el contenedor <code>jenkins</code></strong> de una versión anterior de esta hoja: correr el <code>podman build</code> de arriba, luego <code>podman rm -f jenkins</code> y el <code>podman run</code> sin el <code>podman volume create</code>. Jobs, usuarios y credenciales viven en el volumen <code>jenkins_home</code> y se conservan; Jenkins no pide el asistente otra vez.</div>
+<p>Comprobar que Jenkins ve el motor:</p>
+<div class="cb"><pre><code>podman exec jenkins docker ps      # lista los contenedores, incluido jenkins</code></pre></div>
+
+<h3>Desbloqueo y asistente (solo con volumen nuevo)</h3>
+<div class="cb"><pre><code>podman exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword</code></pre></div>
+<ol class="steps">
+<li>Pegar la clave en <a href="http://localhost:8080">localhost:8080</a>.</li>
+<li><em>Install suggested plugins</em>. Trae Pipeline, Git, JUnit, Credentials y Pipeline Graph View, que dibuja las etapas del build.</li>
+<li>Crear el usuario admin y dejar <code>http://localhost:8080/</code> como URL.</li>
+</ol>
+
+<h2 id="c">c. Smoke: job Freestyle en la interfaz</h2>
+<ol class="steps">
+<li><em>New Item</em> → <code>hdt5-smoke</code> → <em>Freestyle project</em>.</li>
+<li><em>Source Code Management</em> → <em>Git</em>: URL del repositorio, <em>Branch Specifier</em> <code>*/main</code> (el valor por defecto es <code>*/master</code>). Si es privado, la credencial de la sección f.</li>
+<li><em>Build Steps</em> → <em>Execute shell</em>:</li>
+</ol>
+<div class="cb"><pre><code>uv run api.py &gt; api.log 2&gt;&amp;1 &amp;
+API_PID=$!
+trap 'kill $API_PID' EXIT
+for i in $(seq 1 60); do
+  curl -sf http://127.0.0.1:8000/health &amp;&amp; break
+  sleep 1
+done
+cd bruno/smoke
+bru run --env local --sandbox=developer --reporter-junit results.xml</code></pre></div>
+<ol class="steps" start="4">
+<li><em>Post-build Actions</em> → <em>Publish JUnit test result report</em>: <code>bruno/smoke/results.xml</code>.</li>
+<li><em>Save</em> → <em>Build Now</em>. <em>Test Result</em> muestra los requests del smoke en verde.</li>
+</ol>
+
+<h2 id="d">d. Archivos del repo</h2>
+<h3>Containerfile del API</h3>
+<p>En la raíz del repositorio. El <code>__main__</code> de <code>api.py</code> escucha en <code>127.0.0.1</code>, que dentro de un contenedor no se alcanza desde afuera, así que la imagen arranca uvicorn en <code>0.0.0.0</code>.</p>
+<div class="cb"><pre><code>FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen
+COPY api.py .
+EXPOSE 8000
+CMD ["uv", "run", "--frozen", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre></div>
+
+<h3>Jenkinsfile</h3>
+<p>En la raíz, con el nombre <code>Jenkinsfile</code>. Commit y push.</p>
+<div class="cb"><pre><code>// CI: arranca el API y corre la regresion. bru sale con 1 si falla
+// una aserción, la etapa queda roja y las siguientes no corren.
+// CD: solo con la regresion en verde, imagen nueva y books-api reemplazado.
+pipeline {
+  agent any
+  triggers { pollSCM('H/2 * * * *') }
+  options {
+    skipDefaultCheckout()
+    timeout(time: 15, unit: 'MINUTES')
+  }
+  environment { IMAGE = "books-api:${env.BUILD_NUMBER}" }
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+    stage('Start API') {
+      steps {
+        sh '''
+          nohup uv run api.py &gt; api.log 2&gt;&amp;1 &amp;
+          echo $! &gt; api.pid
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8000/health &amp;&amp; exit 0
+            sleep 1
+          done
+          cat api.log; exit 1
+        '''
+      }
+    }
+    // --sandbox=developer: el sandbox por defecto de bru falla al azar bajo carga.
+    stage('Regresion') {
+      steps {
+        dir('bruno/regresion') {
+          sh 'bru run --env local --sandbox=developer --reporter-junit results.xml'
+        }
+      }
+    }
+    stage('Build image') {
+      steps { sh 'docker build -f Containerfile -t "$IMAGE" .' }
+    }
+    stage('Deploy') {
+      steps {
+        sh '''
+          docker rm -f books-api || true
+          docker run -d --name books-api -p 8001:8000 "$IMAGE"
+          for i in $(seq 1 30); do
+            docker exec books-api python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" &amp;&amp; exit 0
+            sleep 1
+          done
+          docker logs books-api; exit 1
+        '''
+      }
+    }
+  }
+  post {
+    always {
+      junit allowEmptyResults: true, testResults: 'bruno/regresion/results.xml'
+      sh 'kill "$(cat api.pid)" 2&gt;/dev/null || true'
+    }
+  }
+}</code></pre></div>
+<p>El API de las pruebas corre dentro de Jenkins en el puerto 8000. El desplegado es un contenedor aparte, <code>books-api</code>, publicado en el 8001 de la máquina propia.</p>
+
+<h2 id="e">e. Job CI/CD</h2>
+<p><em>New Item</em> → <code>hdt5-cd</code> → <em>Pipeline</em> → <em>Definition: Pipeline script from SCM</em>:</p>
+<div class="tw"><table>
+<tr><th>Campo</th><th>Valor</th></tr>
+<tr><td><em>SCM</em></td><td><code>Git</code></td></tr>
+<tr><td><em>Repository URL</em></td><td><code>https://github.com/USUARIO/REPO.git</code></td></tr>
+<tr><td><em>Credentials</em></td><td><code>github-pat</code> si el repositorio es privado (sección f); <em>none</em> si es público</td></tr>
+<tr><td><em>Branch Specifier</em></td><td><code>*/main</code> (el valor por defecto es <code>*/master</code>)</td></tr>
+<tr><td><em>Script Path</em></td><td><code>Jenkinsfile</code></td></tr>
+</table></div>
+<ol class="steps">
+<li><em>Save</em> → <em>Build Now</em> una vez. Jenkins registra el <code>pollSCM</code> al leer el Jenkinsfile en ese primer build; antes de eso ningún commit dispara nada.</li>
+<li>Abrir el build → <em>Stages</em>: las cinco etapas en verde. Desde la Mac, <code>curl localhost:8001/health</code> responde <code>{"status":"ok","books":3}</code>.</li>
+<li>De ahí en adelante, Jenkins revisa GitHub cada 2 minutos (<code>H/2 * * * *</code>) y corre un build por cada commit nuevo en <code>main</code>. La consola de ese build empieza con <code>Started by an SCM change</code> y trae la línea <code>Checking out Revision &lt;SHA&gt;</code>.</li>
+</ol>
+<p>Un webhook de GitHub no llega a un Jenkins en <code>localhost</code> sin un túnel; por eso el disparador es polling.</p>
+
+<h2 id="f">f. Repositorio privado</h2>
+<ol class="steps">
+<li>GitHub: <em>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</em>. Solo el repositorio de la HDT 4, permiso <em>Contents: Read-only</em>.</li>
+<li>Jenkins: <em>Manage Jenkins → Credentials → System → Global credentials → Add Credentials</em>. <em>Kind</em>: <em>Username with password</em>; usuario de GitHub, el token como contraseña, <em>ID</em> <code>github-pat</code>.</li>
+<li>Elegir <code>github-pat</code> en <em>Credentials</em> del job.</li>
+</ol>
+<div class="warn">El token no va en ningún archivo del repositorio.</div>
+
+<h2 id="g">g. Entrega</h2>
+<p>En el repositorio de la HDT 4, rama <code>main</code>, antes del martes 29 de septiembre, 23:59. Las capturas son del job <code>hdt5-cd</code> y muestran la barra de direcciones.</p>
+<div class="tw"><table>
+<tr><th>Archivo</th><th>Contenido</th></tr>
+<tr><td><code>Jenkinsfile</code></td><td>en la raíz: la regresión como puerta, la imagen y el despliegue. Es el que produjo los builds</td></tr>
+<tr><td><code>Containerfile</code></td><td>en la raíz, la imagen del API</td></tr>
+<tr><td><code>evidencia/jenkins/01-build-verde.png</code></td><td><em>Stages</em> de un build SUCCESS con <em>Build image</em> y <em>Deploy</em> en verde</td></tr>
+<tr><td><code>evidencia/jenkins/02-build-bloqueado.png</code></td><td><em>Stages</em> de un build FAILURE: <em>Regresion</em> en rojo, <em>Build image</em> y <em>Deploy</em> sin correr</td></tr>
+<tr><td><code>evidencia/jenkins/03-build-por-commit.png</code></td><td><em>Console Output</em> de un build con <code>Started by an SCM change</code> y <code>Checking out Revision &lt;SHA&gt;</code>. Ese SHA es un commit del historial del repositorio en GitHub</td></tr>
+</table></div>
+<h3>Build bloqueado</h3>
+<ol class="steps">
+<li>Cambiar una aserción de <code>bruno/regresion/</code> para que sea falsa, por ejemplo <code>res.status: eq 200</code> por <code>eq 201</code>. Commit y push: el polling dispara el build, que termina en FAILURE. Captura 02, y sirve también para la 03.</li>
+<li><code>git revert HEAD</code> y push. El último build queda en verde y <code>books-api</code> sigue respondiendo en el 8001.</li>
+</ol>
+<p>Los dos commits quedan en el historial, sin squash ni force push.</p>
+
+<h2 id="h">h. Problemas comunes</h2>
+<div class="tw"><table>
+<tr><th>Síntoma</th><th>Causa</th><th>Arreglo</th></tr>
+<tr><td><code>Cannot connect to Podman</code></td><td>VM apagada</td><td><code>podman machine start</code></td></tr>
+<tr><td><code>address already in use</code> en 8080 o 8001</td><td>otro proceso o contenedor usa el puerto</td><td><code>lsof -nP -iTCP:8080 -sTCP:LISTEN</code>; para el 8001, <code>podman rm -f books-api</code></td></tr>
+<tr><td>No se tiene la clave de desbloqueo</td><td>se cerró la terminal</td><td><code>podman exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword</code></td></tr>
+<tr><td>Se olvidó la contraseña del admin</td><td>ya pasó el asistente</td><td>empezar de cero (sección i), o <code>&lt;useSecurity&gt;false&lt;/useSecurity&gt;</code> en <code>/var/jenkins_home/config.xml</code>, <code>podman restart jenkins</code>, cambiar la contraseña y reactivar la seguridad</td></tr>
+<tr><td><code>bru</code>, <code>uv</code> o <code>docker: not found</code></td><td>el contenedor salió de una imagen vieja</td><td><code>podman build</code>, <code>podman rm -f jenkins</code> y el <code>podman run</code> de la sección b</td></tr>
+<tr><td><code>permission denied while trying to connect to the docker API</code></td><td>falta <code>--security-opt label=disable</code>, o la imagen termina en <code>USER jenkins</code></td><td>recrear el contenedor con el Containerfile y el <code>podman run</code> de la sección b</td></tr>
+<tr><td><code>Cannot connect to the Docker daemon</code></td><td>no se montó el socket, o <code>$SOCK</code> quedó vacío</td><td><code>echo $SOCK</code> en la misma terminal del <code>podman run</code></td></tr>
+<tr><td><code>unable to evaluate symlinks in Dockerfile path</code></td><td>el CLI de docker busca <code>Dockerfile</code></td><td><code>docker build -f Containerfile</code></td></tr>
+<tr><td><code>DEPRECATED: The legacy builder is deprecated</code></td><td>aviso del CLI de docker</td><td>ninguno; el build sigue</td></tr>
+<tr><td>Un commit no dispara el build</td><td>el job nunca corrió, o no han pasado 2 minutos</td><td><em>Build Now</em> una vez; revisar <em>Polling Log</em> en el job</td></tr>
+<tr><td><code>curl localhost:8001</code> rechazado y <em>Deploy</em> en verde</td><td>el API de la imagen escucha en <code>127.0.0.1</code></td><td><code>--host 0.0.0.0</code> en el <code>CMD</code> del Containerfile del API</td></tr>
+<tr><td><code>reading 'newContext'</code></td><td>sandbox por defecto de bru bajo carga</td><td><code>--sandbox=developer</code></td></tr>
+<tr><td><code>Couldn't find any revision to build</code> con <code>origin/master</code></td><td><em>Branch Specifier</em> en <code>*/master</code></td><td><em>Configure</em> → <code>*/main</code></td></tr>
+<tr><td><code>Authentication failed</code> o <code>Repository not found</code></td><td>repositorio privado sin credencial válida</td><td>sección f</td></tr>
+</table></div>
+
+<h2 id="i">i. Limpieza</h2>
+<h3>Pausar</h3>
+<div class="cb"><pre><code>podman stop jenkins books-api
+podman machine stop
+# para volver:
+podman machine start &amp;&amp; podman start jenkins books-api</code></pre></div>
+<h3>Borrar el despliegue</h3>
+<div class="cb"><pre><code>podman rm -f books-api
+podman rmi $(podman images --filter reference=books-api --format '{{.Repository}}:{{.Tag}}')</code></pre></div>
+<h3>Borrar todo, después de entregar</h3>
+<div class="cb"><pre><code>podman rm -f jenkins books-api
+podman volume rm jenkins_home
+podman rmi jenkins-bruno
+podman machine stop &amp;&amp; podman machine rm -f</code></pre></div>
+</main>
+</div>
+<script>
+document.querySelectorAll('.cb').forEach(function(b){
+  var btn=document.createElement('button');btn.type='button';btn.textContent='copiar';
+  btn.addEventListener('click',function(){
+    var t=b.querySelector('code').innerText;
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){btn.textContent='copiado'},function(){btn.textContent='error'});
+    setTimeout(function(){btn.textContent='copiar'},1500);
+  });
+  b.appendChild(btn);
+});
+var links=[].slice.call(document.querySelectorAll('#toc a'));
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'0px 0px -70% 0px'});
+document.querySelectorAll('main h2[id]').forEach(function(h){io.observe(h)});
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+info:
+  name: Health
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/health"
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.status
+      operator: eq
+      value: ok
+    - expression: res.body.books
+      operator: eq
+      value: "3"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

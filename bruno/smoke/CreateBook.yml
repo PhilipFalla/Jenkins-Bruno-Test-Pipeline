@@ -1,0 +1,32 @@
+info:
+  name: CreateBook
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/books"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "The Catcher in the Rye",
+        "author": "J. D. Salinger",
+        "year": 1951
+      }
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "201"
+    - expression: res.body.id
+      operator: isNumber
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

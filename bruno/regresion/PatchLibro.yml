@@ -1,0 +1,44 @@
+info:
+  name: PatchLibro
+  type: http
+  seq: 13
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/books/{{bookId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "copies": 5
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Transición de estados. Cubre: Existe → Existe con el evento PATCH; solo cambia el campo enviado"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.copies
+      operator: eq
+      value: "5"
+    - expression: res.body.title
+      operator: eq
+      value: Reemplazado
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Transición de estados
+
+  **Cubre:** Existe → Existe con el evento PATCH; solo cambia el campo enviado
+
+  **Resultado esperado:** 200, copies = 5, el resto intacto

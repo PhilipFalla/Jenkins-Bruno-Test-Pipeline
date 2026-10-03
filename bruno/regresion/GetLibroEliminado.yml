@@ -1,0 +1,32 @@
+info:
+  name: GetLibroEliminado
+  type: http
+  seq: 15
+
+http:
+  method: GET
+  url: "{{baseUrl}}/books/{{bookId}}"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Transición de estados. Cubre: En el estado Eliminado, el evento GET no es válido"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "404"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Transición de estados
+
+  **Cubre:** En el estado Eliminado, el evento GET no es válido
+
+  **Resultado esperado:** 404

@@ -1,0 +1,38 @@
+info:
+  name: PutR4NoExisteInvalido
+  type: http
+  seq: 12
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/books/{{missingId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Fantasma"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Tabla de decisión (PUT). Cubre: Regla R4: el libro existe = N, el cuerpo es válido = N. La spec no dice cuál error gana; el API valida primero."
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "422"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Tabla de decisión (PUT)
+
+  **Cubre:** Regla R4: el libro existe = N, el cuerpo es válido = N. La spec no dice cuál error gana; el API valida primero.
+
+  **Resultado esperado:** 422 (la validación ocurre antes de buscar el libro)

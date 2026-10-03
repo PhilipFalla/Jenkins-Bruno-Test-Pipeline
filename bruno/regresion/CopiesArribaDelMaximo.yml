@@ -1,0 +1,41 @@
+info:
+  name: CopiesArribaDelMaximo
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/books"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Muchas copias",
+        "author": "Anónimo",
+        "year": 2000,
+        "copies": 1000
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Valores frontera. Cubre: copies = 1000, justo arriba del máximo (999)"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "422"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Valores frontera
+
+  **Cubre:** copies = 1000, justo arriba del máximo (999)
+
+  **Resultado esperado:** 422

@@ -1,0 +1,35 @@
+info:
+  name: Reset
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/reset"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Preparación (no es un caso de prueba). Cubre: Estado inicial con los 3 libros semilla"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.books
+      operator: eq
+      value: "3"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Preparación (no es un caso de prueba)
+
+  **Cubre:** Estado inicial con los 3 libros semilla
+
+  **Resultado esperado:** 200, books = 3

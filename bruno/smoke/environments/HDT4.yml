@@ -1,0 +1,8 @@
+name: HDT4
+variables:
+  - name: DEMO_API_KEY
+    value: s3cret
+    description: ""
+  - name: baseUrl
+    value: http://127.0.0.1:8000
+    description: ""

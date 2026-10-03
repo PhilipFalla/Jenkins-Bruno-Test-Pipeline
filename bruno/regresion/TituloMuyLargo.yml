@@ -1,0 +1,42 @@
+info:
+  name: TituloMuyLargo
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{baseUrl}}/books"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "{{t121}}",
+        "author": "Anónimo",
+        "year": 2000
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: bru.setVar("t121", "x".repeat(121));
+    - type: tests
+      code: "// Técnica ISTQB: Valores frontera. Cubre: title de 121 caracteres, uno más que el máximo (120)"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "422"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Valores frontera
+
+  **Cubre:** title de 121 caracteres, uno más que el máximo (120)
+
+  **Resultado esperado:** 422

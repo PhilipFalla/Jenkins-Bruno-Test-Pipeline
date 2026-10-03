@@ -1,0 +1,40 @@
+info:
+  name: YearArribaDelMaximo
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/books"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Del futuro",
+        "author": "Anónimo",
+        "year": 2101
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: "// Técnica ISTQB: Valores frontera. Cubre: year = 2101, justo arriba del máximo (2100)"
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "422"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: |-
+  **Técnica ISTQB:** Valores frontera
+
+  **Cubre:** year = 2101, justo arriba del máximo (2100)
+
+  **Resultado esperado:** 422
